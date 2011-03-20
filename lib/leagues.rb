@@ -1,7 +1,27 @@
-module Picklive::League
+module Picklive::Leagues
+  module Timeful
+    belongs_to :current_version, :foreign_key => :record_for, :class => self
+    @timeful_dependents = []
+    def end
+      historic = attributes
+      attributes.delete(:id)
+      record = self.class.create historic.merge(:ended_on => Time.now, :current_version => self)
+      timeful_dependents {|sym| self.send(sym).send(&:end) }
+      notify(:ended)
+    end
+    module ClassMethods
+      attr_reader :timeful_dependents
+      def timeful_dependents *dependents
+        @timeful_dependents.concat(dependents)
+      end
+    end
+  end
+  
   class League < ActiveRecord::Base
     has_many :groups
-    attr_reader :promotions, :period, :tiers, :group_max, :group_min, :groups
+    attr_reader :promotions, :group_max, :groups
+    include Timeful
+    timeful_dependents :groups
     # the number of groups on tier N; override
     def tier_groups(n)
     end
@@ -13,7 +33,7 @@ module Picklive::League
       tier_groups(tier_n).times { tier << Group.create(tier_n,self) }
       # for each slice of G particanpts, assign to groups
       to_assign = participants.slice!(tier.length * group_max)
-      groups.take_while(to_assign.empty? == false) {|group| group.participants << to_assign.unshift }
+      tier.take_while(to_assign.empty? == false) {|group| group.participants << to_assign.unshift }
       if participants.empty?
         tiers
       else
@@ -21,7 +41,7 @@ module Picklive::League
       end
     end
     def judge
-      groups.for_judging.each_cons(2) do |pair|
+      groups.for_judging do |pair|
         higher, lower = pair
         demoting = higher.collect(&:for_demotion)
         promoting = lower.collect(&:for_promotion)
@@ -32,6 +52,7 @@ module Picklive::League
           participant.promote(higher)
         end
       end
+      groups.each(&:end)
     end
     def tiers
       @tiers ||= []
@@ -44,6 +65,8 @@ module Picklive::League
   class Group < ActiveRecord::Base
     has_many :participants
     belongs_to :league
+    include Timeful
+    timeful_dependents :participants
     def initialize(tier_n,league)
       tier = tier_n
       league = league
@@ -54,14 +77,12 @@ module Picklive::League
     def for_promotion
       tier == 0 ? [] : participants.for_promotion(league.promotions)
     end
-    def sort(a,b)
-      a.points <=> b.points
-    end
   end
   
   class Participant < ActiveRecord::Base
     belongs_to :group
     belongs_to :entrant, :polymorphic => true
+    include Timeful
     def demote(to)
       notify(:demoted,group,to)
       group = to
