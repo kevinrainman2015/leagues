@@ -3,16 +3,12 @@ module Picklive
   module Leagues
     module Timeful
       def end
-        historic = {
-          :name => name,
-          :promotions => promotions,
-          :group_max => group_max,
-          :tier_system => tier_system
-        }
-        record = self.class.create(historic)
+        record = self.class.new Hash[self.class.attr_accessible.map do |attrib|
+          [attrib,self.send(attrib)]
+        end]
         record.ended_at = Time.now
         record.current_version = self
-        record.save
+        record.save!
         self.class._timeful_dependents {|sym| self.send(sym).send(&:end) }
         notify(:ended)
       end
@@ -45,7 +41,7 @@ module Picklive
       def filler(entries,tiers,tier_n)
         tier = tiers[tier_n] = []
         tier_groups(tier_n).times { tier << Group.create(:tier => tier_n, :league => self) }
-        # for each slice of G entries, assign to groups
+        # for each slice of G entries, assign to consecutive groups, to 'sprinkle' the best players fairly
         to_assign = entries.slice!(0,tier.length * group_max)
         tier.cycle((to_assign.length / tier.length.to_f).ceil) do |group| 
           group.entries << to_assign.shift unless to_assign.empty?
@@ -57,10 +53,10 @@ module Picklive
         end
       end
       def judge
-        tiers.each_slice(2) do |pair|
+        tiers.each_cons(2) do |pair|
           higher, lower = pair
-          demoting = higher.for_demotion
-          promoting = lower.for_promotion
+          demoting = higher.collect(&:for_demotion).flatten(1)
+          promoting = lower.collect(&:for_promotion).flatten(1)
           demoting.each do |entry|
             entry.demote(lower)
           end
@@ -71,17 +67,17 @@ module Picklive
         groups.each(&:end)
       end
       def tiers
-        organise_to_tiers(groups.with_entries :order_by => 'tier ASC')
+        organise_to_tiers(groups.for_judging :order => 'tier ASC')
       end
       def organise_to_tiers(groups,tier_n = 0, tiers = [])
         tiers[tier_n] = groups.slice!(0,tier_groups(tier_n))
         groups.empty? ? tiers : organise_to_tiers(groups,tier_n + 1, tiers)
       end
       def demotions_from(tier)
-        tier_groups(tier - 1) * promotions
+        tier_groups(tier + 1) * promotions
       end
       def tier_groups(level)
-        self.send tier_system.tableize.singularize, level
+        self.send(tier_system.tableize.singularize, level)
       end
       @tier_systems = []
       class << self
@@ -104,7 +100,8 @@ module Picklive
       belongs_to :league
       include Timeful
       timeful_dependents :entries
-      named_scope :with_entries, :include => :entries
+      named_scope :for_judging, :include => [:entries, :league]
+      attr_accessible :tier, :league
       def for_demotion
         entries.for_demotion(league.demotions_from(tier))
       end
@@ -116,14 +113,19 @@ module Picklive
     class Entry < ActiveRecord::Base
       belongs_to :group
       belongs_to :entrant, :polymorphic => true
+      named_scope :for_demotion, lambda {|num| {:order => 'points ASC', :limit => num }}
+      named_scope :for_promotion, lambda {|num| {:order => 'points ASC', :limit => num }}
+      named_scope :by_points, :order => 'points DESC'
+      named_scope :not_ended, :conditions => {:ended_at => nil}
+      
       include Timeful
       def demote(to)
-        notify(:demoted,group,to)
+        notify(:demoted)
         group = to
         save
       end
       def promote(to)
-        notify(:promoted,group,to)
+        notify(:promoted)
         group = to
         save
       end

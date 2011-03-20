@@ -3,7 +3,7 @@ include Picklive::Leagues
 describe "the league system" do
   
   let(:league) { League.create :name => 'a league', :promotions => 4, :group_max => 2, :tier_system => 'powers_of_two'}
-  let(:entries) { [10,20,10,25,13,16,21,42].sort.map {|points|
+  let(:entries) { [1,2, 3,4,5,6, 7,8].reverse.map {|points|
     Entry.new :points => points, :entrant_class => 'meh', :entrant_id => 1
   }}
 
@@ -17,6 +17,10 @@ describe "the league system" do
       League.last.ended_at.should == Time.parse('01/01/2011')
     end
   end
+  it "cacluates demotions required to fill promotions" do
+    league.demotions_from(0).should == 2 * 4
+    league.demotions_from(1).should == 4 * 4
+  end
   it "fills a league system" do
     league.fill(entries)
     league.tiers[0].length.should == 2**0
@@ -26,13 +30,31 @@ describe "the league system" do
   it "tiers groups" do
     tiered = league.organise_to_tiers([1,2,3,4,5,6])
     tiered[0].length.should == 1
-    puts tiered.to_yaml
     tiered[0][0].should == 1
     tiered[2].length.should == 3
   end
   it "demotes enough players to fulfil all promotions" do
     league.fill(entries)
     league.judge
+    Entry.by_points.not_ended.first.group.tier.should == 0
+    Entry.by_points.not_ended.last.group.tier.should == 2
   end
   
+  class League
+    def to_s
+      puts "\n"
+      tiers.each_index do |index|
+        groups = tiers[index]
+        puts "at tier #{index}\n"
+        puts "  #{groups.length} groups\n"
+        groups.each do |group|
+        puts "    - group_id #{group.id}"
+        group.entries.each do |entry|  
+        puts "      - entry: points #{entry.points}"
+        end
+        end
+      end
+      nil
+    end
+  end
 end

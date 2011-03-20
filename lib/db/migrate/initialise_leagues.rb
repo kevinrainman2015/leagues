@@ -12,8 +12,8 @@ class InitialiseLeagues < ActiveRecord::Migration
     create_table :groups, :force => true do |t|
       t.integer :tier, :null => false
       t.integer :league_id, :null => false
-      t.integer :record_for
-      t.timestamp :current_version_id
+      t.timestamp :ended_at
+      t.integer :current_version_id
       t.timestamps
     end
     create_table :entries, :force => true do |t|
@@ -21,7 +21,7 @@ class InitialiseLeagues < ActiveRecord::Migration
       t.integer :group_id
       t.string :entrant_class, :null => false
       t.integer :entrant_id, :null => false
-      t.timestamp :ended_on
+      t.timestamp :ended_at
       t.integer :current_version_id
       t.timestamps
     end
