@@ -7,8 +7,6 @@ namespace :leagues do
     League.find_each(&:judge)
   end
   task :install do
-    Dir.glob(File.join(File.dirname(__FILE__), "..", "db", "migrate", "*")).each do |file|
-      require file
-    end
+    ActiveRecord::Migrator.migrate (File.join(File.dirname(__FILE__), '..','db','migrate','initialise_leagues.rb' )
   end
 end
