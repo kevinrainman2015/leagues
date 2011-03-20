@@ -4,7 +4,11 @@ describe "the league system" do
   
   let(:league) { League.create :name => 'a league', :promotions => 4, :group_max => 2, :tier_system => 'powers_of_two'}
   let(:entries) { [1,2, 3,4,5,6, 7,8].reverse.map {|points|
-    Entry.new :points => points, :entrant_class => 'meh', :entrant_id => 1
+    e = Entry.new 
+    {:entrant_class => 'meh', :entrant_id => 1, :points => points}.each do |attrib,val|
+      e.send("#{attrib}=",val)
+    end
+    e
   }}
 
   it "creates historic copies of finished leagues" do

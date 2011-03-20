@@ -9,7 +9,7 @@ module Picklive
         record.ended_at = Time.now
         record.current_version = self
         record.save!
-        self.class._timeful_dependents {|sym| self.send(sym).send(&:end) }
+        self.class._timeful_dependents.each {|sym| self.send(sym).each(&:end) }
         notify(:ended)
       end
       class << self
@@ -43,8 +43,8 @@ module Picklive
         tier_groups(tier_n).times { tier << Group.create(:tier => tier_n, :league => self) }
         # for each slice of G entries, assign to consecutive groups, to 'sprinkle' the best players fairly
         to_assign = entries.slice!(0,tier.length * group_max)
-        tier.cycle((to_assign.length / tier.length.to_f).ceil) do |group| 
-          group.entries << to_assign.shift unless to_assign.empty?
+        distribute_entries(to_assign,tier) do |entry, group|
+          group.entries << entry
         end
         if entries.empty?
           tiers
@@ -52,16 +52,22 @@ module Picklive
           filler(entries,tiers,tier_n + 1)
         end
       end
+      def distribute_entries(entries, groups)
+        entries = entries.dup
+        groups.cycle((entries.length / groups.length.to_f).ceil) do |group|
+          yield entries.shift, group unless entries.empty?
+        end
+      end
       def judge
         tiers.each_cons(2) do |pair|
           higher, lower = pair
           demoting = higher.collect(&:for_demotion).flatten(1)
           promoting = lower.collect(&:for_promotion).flatten(1)
-          demoting.each do |entry|
-            entry.demote(lower)
+          distribute_entries(demoting,lower) do |entry, group|
+            entry.demote(group)
           end
-          promoting.each do |entry|
-            entry.promote(higher)
+          distribute_entries(promoting,higher) do |entry, group|
+            entry.promote(group)
           end
         end
         groups.each(&:end)
@@ -117,17 +123,15 @@ module Picklive
       named_scope :for_promotion, lambda {|num| {:order => 'points ASC', :limit => num }}
       named_scope :by_points, :order => 'points DESC'
       named_scope :not_ended, :conditions => {:ended_at => nil}
-      
+      attr_accessible :points, :group, :entrant
       include Timeful
       def demote(to)
+        update_attributes! :group => to
         notify(:demoted)
-        group = to
-        save
       end
       def promote(to)
+        update_attributes! :group => to
         notify(:promoted)
-        group = to
-        save
       end
     end
   
