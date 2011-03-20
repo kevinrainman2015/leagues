@@ -22,9 +22,6 @@ module Picklive::Leagues
     attr_reader :promotions, :group_max, :groups
     include Timeful
     timeful_dependents :groups
-    # the number of groups on tier N; override
-    def tier_groups(n)
-    end
     def fill
       filler(participants,[],0)
     end
@@ -59,6 +56,23 @@ module Picklive::Leagues
     end
     def demotions_from(tier)
       tier_groups(tier - 1) * promotions
+    end
+    def tier_groups(n)
+      self.send tier_system.tablize, n
+    end
+    @tier_systems = []
+    class << self
+      attr_accessor :tier_systems
+      def tier_system :name, &:def
+        define_method name, def
+        tier_systems << name
+      end
+      def tier_systems_for_display
+        tier_systems.map(&:to_s).map(&:humanize)
+      end
+    end
+    tier_system :powers_of_two do |n|
+      2**n
     end
   end
   

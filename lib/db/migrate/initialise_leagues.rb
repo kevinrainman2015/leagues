@@ -6,6 +6,7 @@ class InitialiseLeagues < ActiveRecord::Migration
       t.integer :group_max
       t.timestamp :ended_on
       t.integer :record_for
+      t.string :tier_system
       t.timestamps
     end
     create_table :groups, :force => true do |t|
