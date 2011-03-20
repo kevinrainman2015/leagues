@@ -16,16 +16,18 @@ class InitialiseLeagues < ActiveRecord::Migration
       t.timestamp :ended_on
       t.timestamps
     end
-    create_table :participants, :force => true do |t|
+    create_table :entries, :force => true do |t|
       t.integer :points
       t.timestamp :ended_on
       t.integer :record_for
+      t.string :entrant_class
+      t.integer :entrant_id
       t.timestamps
     end
   end
   def self.down
     drop_table :leagues
     drop_table :groups
-    drop_table :participants
+    drop_table :entries
   end
 end

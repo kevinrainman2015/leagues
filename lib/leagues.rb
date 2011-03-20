@@ -22,19 +22,19 @@ module Picklive::Leagues
     attr_reader :promotions, :group_max, :groups
     include Timeful
     timeful_dependents :groups
-    def fill
-      filler(participants,[],0)
+    def fill(entries)
+      filler(entries,[],0)
     end
-    def filler(participants,tiers,tier_n)
+    def filler(entries,tiers,tier_n)
       tier = tiers[tier_n] = []
       tier_groups(tier_n).times { tier << Group.create(tier_n,self) }
-      # for each slice of G particanpts, assign to groups
-      to_assign = participants.slice!(tier.length * group_max)
-      tier.take_while(to_assign.empty? == false) {|group| group.participants << to_assign.unshift }
-      if participants.empty?
+      # for each slice of G entries, assign to groups
+      to_assign = entries.slice!(tier.length * group_max)
+      tier.take_while(to_assign.empty? == false) {|group| group.entries << to_assign.unshift }
+      if entries.empty?
         tiers
       else
-        fill(participants,tiers,tier_n + 1)
+        filler(entries,tiers,tier_n + 1)
       end
     end
     def judge
@@ -42,11 +42,11 @@ module Picklive::Leagues
         higher, lower = pair
         demoting = higher.collect(&:for_demotion)
         promoting = lower.collect(&:for_promotion)
-        demoting.each do |participant|
-          participant.demote(lower)
+        demoting.each do |entry|
+          entry.demote(lower)
         end
-        promoting.each do |participant|
-          participant.promote(higher)
+        promoting.each do |entry|
+          entry.promote(higher)
         end
       end
       groups.each(&:end)
@@ -77,23 +77,23 @@ module Picklive::Leagues
   end
   
   class Group < ActiveRecord::Base
-    has_many :participants
+    has_many :entries
     belongs_to :league
     include Timeful
-    timeful_dependents :participants
+    timeful_dependents :entries
     def initialize(tier_n,league)
       tier = tier_n
       league = league
     end
     def for_demotion
-      participants.for_demotion(league.demotions_from(tier))
+      entries.for_demotion(league.demotions_from(tier))
     end
     def for_promotion
-      tier == 0 ? [] : participants.for_promotion(league.promotions)
+      tier == 0 ? [] : entries.for_promotion(league.promotions)
     end
   end
   
-  class Participant < ActiveRecord::Base
+  class Entry < ActiveRecord::Base
     belongs_to :group
     belongs_to :entrant, :polymorphic => true
     include Timeful
