@@ -5,7 +5,8 @@ class InitialiseLeagues < ActiveRecord::Migration
       t.integer :promotions, :null => false
       t.integer :group_max, :null => false
       t.timestamp :ended_at
-      t.integer :current_version_id
+      t.integer :next_version_id
+      t.integer :previous_version_id
       t.string :tier_system, :null => false
       t.timestamps
     end
@@ -13,7 +14,8 @@ class InitialiseLeagues < ActiveRecord::Migration
       t.integer :tier, :null => false
       t.integer :league_id, :null => false
       t.timestamp :ended_at
-      t.integer :current_version_id
+      t.integer :next_version_id
+      t.integer :previous_version_id
       t.timestamps
     end
     create_table :entries, :force => true do |t|
@@ -22,7 +24,8 @@ class InitialiseLeagues < ActiveRecord::Migration
       t.string :entrant_type, :null => false
       t.integer :entrant_id, :null => false
       t.timestamp :ended_at
-      t.integer :current_version_id
+      t.integer :next_version_id
+      t.integer :previous_version_id
       t.timestamps
     end
   end

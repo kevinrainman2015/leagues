@@ -3,27 +3,31 @@ module Picklive
   module Leagues
     module Timeful
       def end
-        record = self.class.new Hash[self.class.attr_accessible.map do |attrib|
-          [attrib,self.send(attrib)]
-        end]
-        record.ended_at = Time.now
-        record.current_version = self
-        record.save!
-        self.class._timeful_dependents.each {|sym| self.send(sym).each(&:end) }
+        next_version = self.class.create next_version_attributes
+        update_attributes :ended_at => Time.now, :next_version => next_version
         notify(:ended)
+      end
+      def next_version_attributes
+        Hash[self.class.attr_accessible.map {|attrib| [attrib,self.send(attrib)] }].merge {
+          :previous_version => self
+        }
+      end
+      def current?
+        next_version.nil?
+      end
+      def oldest?
+        previous_version.nil?
       end
       class << self
         def included(into)
-          into.belongs_to :current_version, :foreign_key => :current_version_id, :class_name => into.to_s
-          into.extend ClassMethods
-        end
-      end
-      module ClassMethods
-        def _timeful_dependents
-          @timeful_dependents ||= []
-        end
-        def timeful_dependents *dependents
-          _timeful_dependents.concat(dependents)
+          into.belongs_to :next_version, :foreign_key => :next_version_id, :class_name => into.to_s
+          into.belongs_to :previous_version, :foreign_key => :previous_version_id, :class_name => into.to_s
+          into.attr_accessible :next_version, :previous_version, :ended_at
+          class << into
+            def current_version
+              find :conditions => {:ended_at => nil}
+            end
+          end
         end
       end
     end
@@ -33,8 +37,7 @@ module Picklive
       has_many :groups
       attr_accessible :name, :promotions, :group_max, :tier_system
       include Timeful
-      timeful_dependents :groups
-      
+League      
       def fill(entries)
         filler(entries,[],0)
       end
@@ -105,7 +108,6 @@ module Picklive
       has_many :entries
       belongs_to :league
       include Timeful
-      timeful_dependents :entries
       named_scope :for_judging, :include => [:entries, :league]
       attr_accessible :tier, :league
       def for_demotion

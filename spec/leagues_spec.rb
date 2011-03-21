@@ -12,14 +12,16 @@ describe "the league system" do
     Entry.new :entrant => User.new, :points => points
   }}
 
-  it "creates historic copies of finished leagues" do
+  it "creates new versions of finished leagues" do
     league.end
-    League.last.current_version.should == league
+    league.next_version.name.should == league.name
+    league.next_version.id.should_not == league.id
   end
   it "stores end date of finished leagues" do
     Timecop.freeze(Time.parse('01/01/2011')) do
+      league.ended_at.should be_nil
       league.end
-      League.last.ended_at.should == Time.parse('01/01/2011')
+      league.ended_at.should == Time.parse('01/01/2011')
     end
   end
   it "cacluates demotions required to fill promotions" do
