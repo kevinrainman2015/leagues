@@ -19,7 +19,7 @@ class InitialiseLeagues < ActiveRecord::Migration
     create_table :entries, :force => true do |t|
       t.integer :points, :null => false
       t.integer :group_id
-      t.string :entrant_class, :null => false
+      t.string :entrant_type, :null => false
       t.integer :entrant_id, :null => false
       t.timestamp :ended_at
       t.integer :current_version_id

@@ -2,13 +2,14 @@ require File.join(File.dirname(__FILE__),'spec_helper')
 include Picklive::Leagues
 describe "the league system" do
   
+  class User < ActiveRecord::Base
+    include Entrant
+    has_many :entries, :as => :entrant
+  end
+  
   let(:league) { League.create :name => 'a league', :promotions => 4, :group_max => 2, :tier_system => 'powers_of_two'}
   let(:entries) { [1,2, 3,4,5,6, 7,8].reverse.map {|points|
-    e = Entry.new 
-    {:entrant_class => 'meh', :entrant_id => 1, :points => points}.each do |attrib,val|
-      e.send("#{attrib}=",val)
-    end
-    e
+    Entry.new :entrant => User.new, :points => points
   }}
 
   it "creates historic copies of finished leagues" do

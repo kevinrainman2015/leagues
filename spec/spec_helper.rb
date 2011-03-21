@@ -9,4 +9,9 @@ ActiveRecord::Base.establish_connection(YAML.load_file(File.join(root,'database.
 require File.join(root, '..','lib','db','migrate','initialise_leagues.rb')
 InitialiseLeagues.up
 
+ActiveRecord::Schema.define do
+  create_table :users do |t|
+  end
+end
+
 require File.join(root, '..', 'lib','leagues')
