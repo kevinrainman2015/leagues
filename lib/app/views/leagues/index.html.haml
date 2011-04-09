@@ -1,0 +1,17 @@
+%h1= @league.name
+.league_lowdown= form_for(:index)
+  = select_tag :id, [@league.groups.map(&:id), @league.groups.map(&:name)]
+%h2.title= @group.title
+%table.group.full
+  %thead
+    %tr
+      %th Team Name
+      %th Points
+      %th Promoted/Relegated
+  %tbody
+    - @group.entries.each do |entry|
+      %tr
+        %td link_to entry.name, entry.entrant
+        %td entry.points
+        %td format_tier_delta(entry.delta)
+

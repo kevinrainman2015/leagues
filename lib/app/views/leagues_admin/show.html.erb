@@ -1,0 +1,17 @@
+<p>
+  <b>Name:</b>
+  <%=h @league.name %>
+</p>
+
+<p>
+  <b>Promotions:</b>
+  <%=h @league.promotions %>
+</p>
+
+<p>
+  <b>Group max:</b>
+  <%=h @league.group_max %>
+</p>
+
+<%= link_to 'Edit', edit_league_path(@league) %> |
+<%= link_to 'Back', leagues_path %>
