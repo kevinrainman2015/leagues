@@ -1,0 +1,5 @@
+Description:
+    Generates migration for leagues.
+
+Examples:
+    `./script/generate leagues`

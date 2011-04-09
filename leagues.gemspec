@@ -14,9 +14,10 @@ Gem::Specification.new do |gem|
    'activerecord','2.3.11',
    'sqlite3-ruby','1.3.2',
    'timecop','0.3.4',
-   'activesupport', '2.3.11'].each_slice(2) do |which, req|
+   'activesupport', '2.3.11',
+   'haml', '3.0.25'].each_slice(2) do |which, req|
      gem.add_dependency which, req
   end
-  gem.files = %w{{lib,rails,spec}/**/* Gemfile* install.rb Rakefile README.* uninstall.rb}.map {|glob| Dir.glob(glob) }.flatten
+  gem.files = %w{{lib,rails,spec,rails_generators}/**/* Gemfile* install.rb Rakefile README.* uninstall.rb}.map {|glob| Dir.glob(glob) }.flatten
   gem.require_path = 'lib'
 end
