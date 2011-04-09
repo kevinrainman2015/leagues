@@ -1,16 +1,19 @@
 require 'active_record'
 module Picklive
   module Leagues
-    module Timeful
-      def end
-        next_version = self.class.create next_version_attributes
+
+    # deltas for promotion/demotion
+    PROMOTION = -1
+    DEMOTION = 1
+
+    module Versioned
+      def finalise next_version_attr = {}
+        next_version = self.class.create next_version_attributes.merge(next_version_attributes)
         update_attributes :ended_at => Time.now, :next_version => next_version
         notify(:ended)
       end
       def next_version_attributes
-        Hash[self.class.attr_accessible.map {|attrib| [attrib,self.send(attrib)] }].merge {
-          :previous_version => self
-        }
+        Hash[self.class.attr_accessible.map {|attrib| [attrib,self.send(attrib)] }].merge :previous_version => self
       end
       def current?
         next_version.nil?
@@ -31,17 +34,14 @@ module Picklive
         end
       end
     end
-  
+
     class League < ActiveRecord::Base
-      
+
       has_many :groups
       attr_accessible :name, :promotions, :group_max, :tier_system
-      include Timeful
-League      
-      def fill(entries)
-        filler(entries,[],0)
-      end
-      def filler(entries,tiers,tier_n)
+      include Versioned
+      named_scope :tier, lambda {|tier| Group.all :tier => tier}
+      def fill(entries,tiers = [],tier_n = 0)
         tier = tiers[tier_n] = []
         tier_groups(tier_n).times { tier << Group.create(:tier => tier_n, :league => self) }
         # for each slice of G entries, assign to consecutive groups, to 'sprinkle' the best players fairly
@@ -52,7 +52,7 @@ League
         if entries.empty?
           tiers
         else
-          filler(entries,tiers,tier_n + 1)
+          fill(entries,tiers,tier_n + 1)
         end
       end
       def distribute_entries(entries, groups)
@@ -73,7 +73,7 @@ League
             entry.promote(group)
           end
         end
-        groups.each(&:end)
+        groups.each(&:finalise)
       end
       def tiers
         organise_to_tiers(groups.for_judging :order => 'tier ASC')
@@ -86,38 +86,24 @@ League
         tier_groups(tier + 1) * promotions
       end
       def tier_groups(level)
-        self.send(tier_system.tableize.singularize, level)
-      end
-      @tier_systems = []
-      class << self
-        attr_accessor :tier_systems
-        def tier_system name, &definition
-          define_method name, definition
-          tier_systems << name.to_s
-        end
-        def tier_systems_for_display
-          tier_systems.map(&:to_s).map(&:humanize)
-        end
-      end
-      tier_system :powers_of_two do |n|
-        2**n
+        2**level
       end
     end
-  
+
     class Group < ActiveRecord::Base
       has_many :entries
       belongs_to :league
-      include Timeful
+      include Versioned
       named_scope :for_judging, :include => [:entries, :league]
       attr_accessible :tier, :league
       def for_demotion
-        entries.for_demotion(league.demotions_from(tier))
+        entries.for_demotion(league.demotions(league.promotions))
       end
       def for_promotion
         tier == 0 ? [] : entries.for_promotion(league.promotions)
       end
     end
-  
+
     class Entry < ActiveRecord::Base
       belongs_to :group
       belongs_to :entrant, :polymorphic => true
@@ -126,17 +112,18 @@ League
       named_scope :by_points, :order => 'points DESC'
       named_scope :not_ended, :conditions => {:ended_at => nil}
       attr_accessible :points, :group, :entrant
-      include Timeful
+      include Versioned
       def demote(to)
-        update_attributes! :group => to
+        finalise :group => to, :delta => DEMOTION
         notify(:demoted)
       end
       def promote(to)
-        update_attributes! :group => to
+        finalise :group => to, :delta => PROMOTION
         notify(:promoted)
       end
     end
-  
+
+    # mixin for entrant classes
     module Entrant
       class << self
         def included(into)

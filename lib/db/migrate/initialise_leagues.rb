@@ -7,7 +7,6 @@ class InitialiseLeagues < ActiveRecord::Migration
       t.timestamp :ended_at
       t.integer :next_version_id
       t.integer :previous_version_id
-      t.string :tier_system, :null => false
       t.timestamps
     end
     create_table :groups, :force => true do |t|
@@ -19,7 +18,7 @@ class InitialiseLeagues < ActiveRecord::Migration
       t.timestamps
     end
     create_table :entries, :force => true do |t|
-      t.integer :points, :null => false
+      t.integer :points, :default => 0
       t.integer :group_id
       t.string :entrant_type, :null => false
       t.integer :entrant_id, :null => false
