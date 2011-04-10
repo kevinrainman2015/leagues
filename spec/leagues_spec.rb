@@ -1,5 +1,4 @@
 require File.join(File.dirname(__FILE__),'spec_helper')
-include Picklive::Leagues
 describe "the league system" do
 
   class User < ActiveRecord::Base

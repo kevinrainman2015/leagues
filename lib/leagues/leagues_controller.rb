@@ -1,5 +1,5 @@
 module Leagues
-  class LeaguesController
+  module LeaguesController
     def index
       @top = Leagues.tier(0).first
       @leagues = Leagues.all

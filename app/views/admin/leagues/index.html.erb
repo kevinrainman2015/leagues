@@ -13,7 +13,7 @@
     <td><%=h league.promotions %></td>
     <td><%=h league.group_max %></td>
     <td><%= link_to 'Show', league %></td>
-    <td><%= link_to 'Edit', edit_league_path(league) %></td>
+    <td><%= link_to 'Edit', edit_admin_league_path(league) %></td>
     <td><%= link_to 'Destroy', league, :confirm => 'Are you sure?', :method => :delete %></td>
   </tr>
 <% end %>
@@ -21,4 +21,4 @@
 
 <br />
 
-<%= link_to 'New league', new_league_path %>
+<%= link_to 'New league', new_admin_league_path %>

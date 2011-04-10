@@ -1,6 +1,6 @@
 <h1>Editing league</h1>
 
-<% form_for(@league) do |f| %>
+<% form_for [:admin, @league] do |f| %>
   <%= f.error_messages %>
 
   <p>
@@ -22,4 +22,4 @@
 
 
 <%= link_to 'Show', @league %> |
-<%= link_to 'Back', leagues_path %>
+<%= link_to 'Back', new_admin_league_path %>
