@@ -5,7 +5,7 @@ module Leagues
       @leagues = Leagues.all
     end
     def show
-
+      @league = League.find(params[:id])
     end
   end
 end

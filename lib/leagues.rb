@@ -1,10 +1,8 @@
 require 'active_record'
-require 'pp'
-
+module Leagues; end
 module Versioned
   def finalise for_next = {}
-    next_version = self.class.create! \
-      prep_next.merge(for_next)
+    next_version = self.class.create! prep_next.merge(for_next)
     update_attributes :ended_at => Time.now, :next_version => next_version
     notify(:ended)
   end
@@ -134,7 +132,7 @@ class Entry < ActiveRecord::Base
   def next_version_attributes
     [:entrant]
   end
-  # entries moving up/down accross tiers
+  # entries moving up/down tiers
   def demote(to)
     finalise :group => to, :delta => DEMOTION, :points => 0
     notify(:demoted)
