@@ -9,7 +9,7 @@ module Versioned
     notify(:ended)
   end
   def prep_next
-    Hash[next_version_attributes.map {|attr| [attr,self.send(attr)] }]
+    Hash[next_version_attributes.map {|attr| [attr,self.send(attr)] }].merge :previous_version => self
   end
   def current?
     next_version.nil?
@@ -78,6 +78,7 @@ class League < ActiveRecord::Base
         entry.promote(group.next_version)
       end
     end
+    # all non demoted/promoted groups will remain
     groups.each do |group|
       group.entries.each do |entry|
         entry.remain(group.next_version) if entry.next_version.nil?
@@ -91,7 +92,7 @@ class League < ActiveRecord::Base
     tiers[tier_n] = groups.slice!(0,tier_groups(tier_n))
     groups.empty? ? tiers : organise_to_tiers(groups,tier_n + 1, tiers)
   end
-  def demotions_required(tier)
+  def demotions
     2 * promotions
   end
   def tier_groups(level)
@@ -106,14 +107,9 @@ class Group < ActiveRecord::Base
   named_scope :for_judging, :include => [:entries, :league]
   attr_accessible :tier, :league, :entries
   delegate :demoting, :promoting, :to => :entries
+  delegate :demotions, :promotions, :to => :league
   def next_version_attributes
     [:tier]
-  end
-  def demotions_required
-    league.demotions_required(tier)
-  end
-  def promotions_required
-    league.promotions
   end
 end
 
@@ -129,10 +125,10 @@ class Entry < ActiveRecord::Base
   include Versioned
   class << self
     def demoting
-      by_points[-first.group.demotions_required..-1]
+      by_points[-first.group.demotions..-1]
     end
     def promoting
-      by_points[0...first.group.promotions_required]
+      by_points[0...first.group.promotions]
     end
   end
   def next_version_attributes

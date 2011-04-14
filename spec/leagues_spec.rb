@@ -8,10 +8,20 @@ describe "the league system" do
     Factory(:league, :groups => [Factory(:group, :entries => [Factory(:entry)])])
   end
 
-  it "creates new versions of finished leagues" do
-    league.finalise
-    league.next_version.name.should == league.name
-    league.next_version.id.should_not == league.id
+  describe "all versioned classes" do
+    [:entry,:group,:league].each_cons(2) do |type,rel|
+      before :each do
+        @ins = Factory(type)
+        @ins.finalise rel => Factory(rel)
+      end
+      it "old version access new version" do
+        @ins.next_version.id.should_not be_nil
+        @ins.next_version.id.should_not == @ins.id
+      end
+      it "new version access previous version" do
+        @ins.next_version.previous_version.should == @ins
+      end
+    end
   end
   it "passes finalisation down the structure" do
     league_with_group.judge
@@ -39,8 +49,7 @@ describe "the league system" do
     end
   end
   it "cacluates demotions required to fill promotions" do
-    league.demotions_required(0).should == 2 * TEST_PROMOTIONS
-    league.demotions_required(1).should == 4 * TEST_PROMOTIONS
+    league.demotions.should == 2 * TEST_PROMOTIONS
   end
   it "fills a league system with each tier having 2^n groups" do
     league.fill(entries)
@@ -75,7 +84,7 @@ describe "the league system" do
         entry(5),
         entry(4),
       ]
-      (group.for_demotion & [demote_one,demote_two]).length.should == 2
+      (group.demoting & [demote_one,demote_two]).length.should == 2
     end
   end
   describe "integration" do
@@ -83,7 +92,7 @@ describe "the league system" do
       @league = League.create! :group_max => 5,
                                :promotions => 1,
                                :name => "Picklive Cup"
-      Group.create! :tier => 0, :league => @league, :entries => [
+      @top_group = Group.create! :tier => 0, :league => @league, :entries => [
         entry(10),
         entry(5),
         entry(4),
@@ -130,18 +139,22 @@ describe "the league system" do
       bottom = @judged.tier(1).map {|gr| gr.entries }.flatten(1)
       demoted = bottom.detect {|en| en.entrant.name == 'demote me'}
       demoted.delta.should == Entry::DEMOTION
-      demoted.previous_version.group_id.should == top_group.id
+      demoted.previous_version.group_id.should == @top_group.id
     end
     describe "finalisation" do
       it "sets pointers to previous version through whole structure" do
         [@judged.groups,
          @judged.groups.map(&:entries).flatten(1),
-         [@judged.previous_version]].map(&:previous_version).any?(&:nil?).should be_false
+         [@judged]].flatten(1).each do |versioned|
+          versioned.previous_version.should_not be_nil
+        end
       end
       it "sets pointers to next version through whole structure" do
         [@league.groups,
          @league.groups.map(&:entries).flatten(1),
-         [@league.previous_version]].map(&:next_version).any?(&:nil?).should be_false
+         [@league]].flatten(1).each do |versioned|
+           versioned.next_version.should_not be_nil
+         end
       end
     end
   end
