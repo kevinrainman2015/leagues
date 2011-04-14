@@ -11,7 +11,21 @@ InitialiseLeagues.up
 
 ActiveRecord::Schema.define do
   create_table :users do |t|
+    t.string :name
   end
 end
 
+TEST_PROMOTIONS = 1
+TEST_GROUP_MAX  = 4
+
+require 'logger'
+ActiveRecord::Base.logger = Logger.new(STDERR)
+
 require File.join(root, '..', 'lib','leagues')
+
+class User < ActiveRecord::Base
+  include Entrant
+  has_many :entries, :as => :entrant
+end
+
+require 'factory'

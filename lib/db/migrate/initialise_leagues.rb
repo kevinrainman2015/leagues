@@ -23,6 +23,7 @@ class InitialiseLeagues < ActiveRecord::Migration
       t.string :entrant_type, :null => false
       t.integer :entrant_id, :null => false
       t.timestamp :ended_at
+      t.integer :delta
       t.integer :next_version_id
       t.integer :previous_version_id
       t.timestamps

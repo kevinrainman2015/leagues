@@ -15,7 +15,8 @@ Gem::Specification.new do |gem|
    'sqlite3-ruby','1.3.2',
    'timecop','0.3.4',
    'activesupport','2.3.11',
-   'haml','3.0.25'].each_slice(2) do |which, req|
+   'haml','3.0.25',
+   'factory_girl','1.3.3'].each_slice(2) do |which, req|
      gem.add_dependency which, req
   end
   gem.files = %w{{lib,rails,spec,rails_generators}/**/* Gemfile* install.rb Rakefile README.* uninstall.rb}.map {|glob| Dir.glob(glob) }.flatten
