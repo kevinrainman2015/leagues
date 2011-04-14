@@ -156,23 +156,4 @@ describe "the league system" do
       end
     end
   end
-
-  class League
-    def to_s
-      puts"\n"
-      puts "League #{id}"
-      tiers.each_index do |index|
-        groups = tiers[index]
-        puts "at tier #{index}\n"
-        puts "  #{groups.length} groups\n"
-        groups.each do |group|
-        puts "    - group_id #{group.id}"
-        group.entries.each do |entry|
-        puts "      - entry: points #{entry.points}, delta #{entry.delta}"
-        end
-        end
-      end
-      nil
-    end
-  end
 end

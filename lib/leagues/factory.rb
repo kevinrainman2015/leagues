@@ -1,5 +1,8 @@
 require 'factory_girl'
 
+TEST_PROMOTIONS = 1
+TEST_GROUP_MAX  = 4
+
 Factory.sequence(:group_name) {|n| "League#{n}"}
 
 Factory.define :league do |f|

@@ -15,9 +15,6 @@ ActiveRecord::Schema.define do
   end
 end
 
-TEST_PROMOTIONS = 1
-TEST_GROUP_MAX  = 4
-
 require 'logger'
 ActiveRecord::Base.logger = Logger.new(STDERR)
 
@@ -28,4 +25,4 @@ class User < ActiveRecord::Base
   has_many :entries, :as => :entrant
 end
 
-require 'factory'
+require File.join(root, '..', 'lib', 'leagues','factory')
