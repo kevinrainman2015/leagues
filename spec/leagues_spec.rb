@@ -116,28 +116,26 @@ describe "the league system" do
       @league.judge
       @league.reload
       @judged = @league.next_version
+      @top = @judged.tier(0).first
+      @bottom = @judged.tier(1).map {|gr| gr.entries }.flatten(1)
     end
     it "promotes applicable groups from both tiers" do
-      top = @judged.tier(0).first
       ['promote me','promote me too'].all? do |name|
-        top.entries.any? {|entry| entry.entrant.name == name }
+        @top.entries.any? {|entry| entry.entrant.name == name }
       end.should be_true
     end
-    it "demotes enough entries from top tiers" do
-      bottom = @judged.tier(1).map {|gr| gr.entries }.flatten(1)
+    it "demotes enough entries from @top.tiers" do
       ['demote me','demote me too'].all? do |name|
-        bottom.any? {|entry| entry.entrant.name == name }
+        @bottom.any? {|entry| entry.entrant.name == name }
       end.should be_true
     end
     it "sets up promoted entries" do
-      top = @judged.tier(0).first
-      promoted = top.entries.detect {|en| en.entrant.name == 'promote me'}
+      promoted = @top.entries.detect {|en| en.entrant.name == 'promote me'}
       promoted.delta.should == Entry::PROMOTION
       promoted.previous_version.group_id.should_not == promoted.group_id
     end
     it "sets up demoted entries" do
-      bottom = @judged.tier(1).map {|gr| gr.entries }.flatten(1)
-      demoted = bottom.detect {|en| en.entrant.name == 'demote me'}
+      demoted = @bottom.detect {|en| en.entrant.name == 'demote me'}
       demoted.delta.should == Entry::DEMOTION
       demoted.previous_version.group_id.should == @top_group.id
     end
